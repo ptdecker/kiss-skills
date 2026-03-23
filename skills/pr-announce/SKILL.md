@@ -2,7 +2,6 @@
 name: kiss:pr-announce
 description: Generate a Slack-ready announcement that a PR is ready for review. Summarizes the PR and copies the message to the clipboard.
 user-invocable: true
-disable-model-invocation: true
 allowed-tools: Bash, Read, Grep, Glob
 argument-hint: "[PR-number]"
 ---
