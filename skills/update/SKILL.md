@@ -136,5 +136,4 @@ Display a final summary:
 
 - Number of new commits pulled
 - New skills linked (if any)
-- A note to restart Claude Code if new skills were added, so they appear in the slash-command
-  list
+- Remind the user to exit and restart Claude Code for the changes to take effect

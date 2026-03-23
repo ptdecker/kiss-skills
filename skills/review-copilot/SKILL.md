@@ -2,7 +2,6 @@
 name: kiss:review-copilot
 description: Evaluate and respond to GitHub Copilot PR review comments. Triages each comment, plans fixes for valid ones, dismisses invalid ones, and pushes resolved changes.
 user-invocable: true
-disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 argument-hint: "[PR-number]"
 ---
