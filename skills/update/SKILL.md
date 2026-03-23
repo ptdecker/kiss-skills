@@ -88,22 +88,42 @@ Stop here.
    git -C ~/.kiss-skills diff --name-only <old-hash>..HEAD
    ```
 
-3. Read `~/.kiss-skills/CHANGELOG.md` and display the changelog entries for versions newer
-   than the previously installed version. To determine which entries are new, find the first
-   `## [` heading whose version matches or predates the old commit, and display everything
-   above it. This gives the user a human-readable summary of what changed and why.
+3. Show any changelog updates related to this upgrade:
+   ```
+   if git -C ~/.kiss-skills diff --quiet <old-hash>..HEAD -- CHANGELOG.md; then
+     echo "No changelog updates."
+   else
+     echo "Changelog updates since the previous version:"
+     git -C ~/.kiss-skills diff <old-hash>..HEAD -- CHANGELOG.md
+   fi
+   ```
+   This gives the user a human-readable summary of what changed and why, without relying on
+   mapping commit hashes to specific changelog version headings.
 
 ## Step 5: Symlink new skills
 
 Check for any new skill directories that do not yet have symlinks:
 
 ```
+mkdir -p ~/.claude/skills
 for skill_dir in ~/.kiss-skills/skills/*/; do
+  [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
-  if [ ! -e ~/.claude/skills/"$skill_name" ]; then
-    ln -s "$skill_dir" ~/.claude/skills/"$skill_name"
-    echo "Linked new skill: $skill_name"
+  target="$HOME/.claude/skills/$skill_name"
+
+  # If a symlink already exists, leave it as-is.
+  if [ -L "$target" ]; then
+    continue
   fi
+
+  # If a non-symlink exists, warn and skip to avoid clobbering.
+  if [ -e "$target" ]; then
+    echo "Skipping $skill_name: $target exists and is not a symlink"
+    continue
+  fi
+
+  ln -s "$skill_dir" "$target"
+  echo "Linked new skill: $skill_name"
 done
 ```
 

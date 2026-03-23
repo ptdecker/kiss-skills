@@ -4,11 +4,11 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 
 ## Skills
 
-| Skill | Command | Description |
-|-------|---------|-------------|
+| Skill                                            | Command                     | Description                                                                                                    |
+|--------------------------------------------------|-----------------------------|----------------------------------------------------------------------------------------------------------------|
 | [review-copilot](skills/review-copilot/SKILL.md) | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub |
-| [pr-announce](skills/pr-announce/SKILL.md) | `/kiss:pr-announce [PR]` | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard |
-| [update](skills/update/SKILL.md) | `/kiss:update` | Update locally installed skills to the latest version from GitHub |
+| [pr-announce](skills/pr-announce/SKILL.md)       | `/kiss:pr-announce [PR]`    | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard                |
+| [update](skills/update/SKILL.md)                 | `/kiss:update`              | Update locally installed skills to the latest version from GitHub                                              |
 
 ## Install
 
@@ -16,7 +16,8 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 curl -fsSL https://raw.githubusercontent.com/ptdecker/kiss-skills/main/install.sh | bash
 ```
 
-This clones the repo to `~/.kiss-skills/` and symlinks each skill into `~/.claude/skills/`. The skills will be available the next time you start Claude Code.
+This clones the repo to `~/.kiss-skills/` and symlinks each skill into `~/.claude/skills/`. The skills will be available
+the next time you start Claude Code.
 
 ### Update
 
@@ -38,17 +39,19 @@ cd ~/.kiss-skills && git pull
 ~/.kiss-skills/uninstall.sh
 ```
 
-This removes the symlinks from `~/.claude/skills/`. The cloned repo is left in place — delete `~/.kiss-skills/` to fully remove it.
+This removes the symlinks from `~/.claude/skills/`. The cloned repo is left in place — delete `~/.kiss-skills/` to fully
+remove it.
 
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and configured
-- [GitHub CLI (`gh`)](https://cli.github.com/) authenticated — required by both skills
+- [GitHub CLI (`gh`)](https://cli.github.com/) authenticated — required by `review-copilot` and `pr-announce`
 - `pbcopy` (macOS) — used by `pr-announce` to copy to clipboard
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, suggesting new skills, and submitting pull requests.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, suggesting new skills, and
+submitting pull requests.
 
 ## License
 
