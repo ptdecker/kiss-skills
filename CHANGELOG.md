@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-03-23
+
+### Added
+
+- **update** skill — update locally installed skills to the latest version from GitHub, with changelog display and automatic symlinking of new skills
+
 ## [1.0.0] - 2026-03-23
 
 ### Added
