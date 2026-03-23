@@ -72,6 +72,23 @@ These must be handled differently from inline threads (see Steps 3 and 7).
 Display a numbered summary of ALL comments found (both inline and suppressed), showing the file,
 line, a one-line synopsis, and whether it is an **inline thread** or **suppressed**.
 
+### No Copilot comments found
+
+If both the inline comments (Step 2a) and the suppressed comments (Step 2b) come back empty,
+tell the user:
+
+> No Copilot review comments found on PR #<number>.
+>
+> This usually means one of:
+> - Copilot auto-review is not enabled for this repository
+>   (check Settings → Code review → Copilot)
+> - Copilot has not reviewed this PR yet (it may take a few minutes after pushing)
+> - Copilot reviewed the PR but had no comments
+>
+> Nothing to do — stopping here.
+
+Stop here. Do not proceed to Step 3.
+
 ## Step 3: Evaluate each comment
 
 For each Copilot comment:

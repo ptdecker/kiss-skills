@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.2] - 2026-03-23
+
+### Fixed
+
+- The review-copilot skill now provides clear guidance when a PR has no Copilot review comments, instead of silently
+  doing nothing ([#3](https://github.com/ptdecker/kiss-skills/issues/3))
+
 ## [1.1.1] - 2026-03-23
 
 ### Fixed
