@@ -8,7 +8,7 @@ Before opening an issue, please check the [existing issues](https://github.com/p
 
 When reporting a bug, include:
 
-- Which skill is affected
+- Which skill is affected?
 - What you expected to happen
 - What actually happened
 - Any error output from Claude Code
