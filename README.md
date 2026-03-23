@@ -8,6 +8,7 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 |-------|---------|-------------|
 | [review-copilot](skills/review-copilot/SKILL.md) | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub |
 | [pr-announce](skills/pr-announce/SKILL.md) | `/kiss:pr-announce [PR]` | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard |
+| [update](skills/update/SKILL.md) | `/kiss:update` | Update locally installed skills to the latest version from GitHub |
 
 ## Install
 
@@ -19,7 +20,13 @@ This clones the repo to `~/.kiss-skills/` and symlinks each skill into `~/.claud
 
 ### Update
 
-Because the skills are symlinked from the clone, updating is just a pull:
+Run the update skill from within Claude Code:
+
+```
+/kiss:update
+```
+
+Or manually pull from the clone:
 
 ```bash
 cd ~/.kiss-skills && git pull
