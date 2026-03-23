@@ -6,8 +6,8 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 
 | Skill | Command | Description |
 |-------|---------|-------------|
-| [review-copilot](skills/review-copilot/SKILL.md) | `/review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub |
-| [pr-announce](skills/pr-announce/SKILL.md) | `/pr-announce [PR]` | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard |
+| [review-copilot](skills/review-copilot/SKILL.md) | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub |
+| [pr-announce](skills/pr-announce/SKILL.md) | `/kiss:pr-announce [PR]` | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard |
 
 ## Install
 
