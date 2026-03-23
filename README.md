@@ -41,14 +41,7 @@ This removes the symlinks from `~/.claude/skills/`. The cloned repo is left in p
 
 ## Contributing
 
-Contributions are welcome. Each skill lives in its own directory under `skills/` and consists of a single `SKILL.md` file. See the [Claude Code skill documentation](https://docs.anthropic.com/en/docs/claude-code/skills) for the format.
-
-To add a new skill:
-
-1. Create `skills/<skill-name>/SKILL.md`
-2. Use the `kiss:` namespace prefix in the skill's `name` field
-3. Add an entry to the table in this README
-4. Open a PR
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, suggesting new skills, and submitting pull requests.
 
 ## License
 
