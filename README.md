@@ -4,11 +4,12 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 
 ## Skills
 
-| Skill                                            | Command                     | Description                                                                                                    |
-|--------------------------------------------------|-----------------------------|----------------------------------------------------------------------------------------------------------------|
-| [review-copilot](skills/review-copilot/SKILL.md) | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub |
-| [pr-announce](skills/pr-announce/SKILL.md)       | `/kiss:pr-announce [PR]`    | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard                |
-| [update](skills/update/SKILL.md)                 | `/kiss:update`              | Update locally installed skills to the latest version from GitHub                                              |
+| Skill                                             | Command                     | Description                                                                                                         |
+|---------------------------------------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------|
+| [review-copilot](skills/review-copilot/SKILL.md)  | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub      |
+| [review-peer](skills/review-peer/SKILL.md)        | `/kiss:review-peer [PR]`    | Triage and respond to unresolved peer review comments — fix valid issues, explain skipped ones, and reply on GitHub |
+| [pr-announce](skills/pr-announce/SKILL.md)        | `/kiss:pr-announce [PR]`    | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard                     |
+| [update](skills/update/SKILL.md)                  | `/kiss:update`              | Update locally installed skills to the latest version from GitHub                                                   |
 
 ## Install
 

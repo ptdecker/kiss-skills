@@ -10,6 +10,7 @@ body:
       options:
         - New skill idea
         - Improvement to review-copilot
+        - Improvement to review-peer
         - Improvement to pr-announce
         - Improvement to install/uninstall
         - Other
