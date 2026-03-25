@@ -9,6 +9,7 @@ body:
       description: Which skill is affected?
       options:
         - review-copilot
+        - review-peer
         - pr-announce
         - install.sh / uninstall.sh
         - Other

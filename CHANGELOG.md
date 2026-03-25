@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-03-25
+
+### Added
+
+- **review-peer** skill – interactively triage and respond to unresolved human peer review comments on a PR. Fixes
+  valid issues, replies on GitHub, and leaves threads open for the reviewer to resolve.
+
 ## [1.1.2] - 2026-03-23
 
 ### Fixed
