@@ -38,14 +38,14 @@ gh api user --jq '.login'
 ## Step 2: Fetch unresolved peer review threads
 
 Use the GitHub GraphQL API to fetch all review threads with their resolution status, comments,
-authors, and reactions:
+and authors:
 
 ```
 gh api graphql -F owner='{owner}' -F repo='{repo}' -F pr={number} -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
+  query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
+        reviewThreads(first: 100, after: $after) {
           pageInfo { hasNextPage endCursor }
           nodes {
             id
@@ -176,10 +176,11 @@ Use a targeted query that includes reactions:
 
 ```
 gh api graphql -F owner='{owner}' -F repo='{repo}' -F pr={number} -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
+  query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
+        reviewThreads(first: 100, after: $after) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             id
             isResolved
@@ -201,6 +202,9 @@ gh api graphql -F owner='{owner}' -F repo='{repo}' -F pr={number} -f query='
   }
 '
 ```
+
+If `pageInfo.hasNextPage` is true, paginate using the `endCursor` value until all threads are
+retrieved.
 
 For each thread the user said to address, verify that:
 - The last comment has at least one :eyes: reaction from the current user's login
