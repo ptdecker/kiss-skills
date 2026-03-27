@@ -8,6 +8,7 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 |---------------------------------------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------|
 | [review-copilot](skills/review-copilot/SKILL.md)  | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub      |
 | [review-peer](skills/review-peer/SKILL.md)        | `/kiss:review-peer [PR]`    | Triage and respond to unresolved peer review comments — fix valid issues, explain skipped ones, and reply on GitHub |
+| [review-pr](skills/review-pr/SKILL.md)            | `/kiss:review-pr [PR]`      | Review a peer's PR — analyze changes, build observations interactively, and create a pending GitHub review          |
 | [pr-announce](skills/pr-announce/SKILL.md)        | `/kiss:pr-announce [PR]`    | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard                     |
 | [update](skills/update/SKILL.md)                  | `/kiss:update`              | Update locally installed skills to the latest version from GitHub                                                   |
 
@@ -46,7 +47,7 @@ remove it.
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and configured
-- [GitHub CLI (`gh`)](https://cli.github.com/) authenticated — required by `review-copilot` and `pr-announce`
+- [GitHub CLI (`gh`)](https://cli.github.com/) authenticated — required by `review-copilot`, `review-peer`, `review-pr`, and `pr-announce`
 - `pbcopy` (macOS) — used by `pr-announce` to copy to clipboard
 
 ## Contributing
