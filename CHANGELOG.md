@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-03-27
+
+### Added
+
+- **review-pr** skill — review a peer's PR by analyzing changes, building observations interactively with the user,
+  and creating a pending GitHub review with inline and file-level comments. The review is created as a draft so the
+  user submits it manually from the GitHub UI with their chosen disposition.
+
 ## [1.2.0] - 2026-03-25
 
 ### Added
