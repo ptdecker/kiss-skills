@@ -47,11 +47,15 @@ gh pr view {number} --repo {owner}/{repo} --json number,title,url,headRefName
 
 Display the PR number, title, and URL. Ask the user to confirm this is the correct PR before proceeding.
 
-Also capture the head commit SHA (needed later for inline comments):
+Also capture two values needed later when creating the review:
 
 ```
 gh pr view {number} --repo {owner}/{repo} --json commits --jq '.commits[-1].oid'
+gh pr view {number} --repo {owner}/{repo} --json id --jq '.id'
 ```
+
+The first is the head commit SHA (needed for inline comments). The second is the PR's GraphQL node ID
+(needed for the GraphQL review creation mutation).
 
 **Important**: All `gh pr` commands in subsequent steps must include `--repo {owner}/{repo}` so they
 target the correct repository.
@@ -100,9 +104,9 @@ Build an enumerated list of observations. Each observation must be classified as
 
 | Type | Description | GitHub mapping |
 |------|-------------|----------------|
-| **Code-specific** | Tied to a specific file and line or line range | Inline review comment in the `comments` array |
-| **File-specific** | About a file as a whole, not a particular line | Included in the review body under a "File-level" heading |
-| **General** | About the PR overall — architecture, approach, cross-cutting concerns | Included in the review body under a "General" heading |
+| **Code-specific** | Tied to a specific file and line or line range | Inline review comment (part of the pending review) |
+| **File-specific** | About a file as a whole, not a particular line | File-level review comment (part of the pending review) |
+| **General** | About the PR overall — architecture, approach, cross-cutting concerns | Posted as a separate PR comment |
 
 For code-specific observations, record the file path, the full line range of the enclosing code block,
 and the observation text. The line range should span the entire relevant block — for example, a full
@@ -194,71 +198,57 @@ clicks "Submit review," they will confirm their chosen disposition at that time.
 
 Separate the accepted observations into three groups based on their type:
 
-1. **Code-specific observations** — these become entries in the `comments` array with `path`,
-   `start_line`, `line`, `side: "RIGHT"`, and `body`. Always use both `start_line` and `line` to
-   highlight the full enclosing code block (e.g., the entire function, the complete const group, or
-   the whole conditional chain), not just the narrow lines that triggered the observation.
-2. **File-specific observations** — these are included in the review `body` under a
-   `### File-level` heading. Each entry should be formatted as a bold file path followed by the
-   observation text.
-3. **General observations** — these are included in the review `body` under a `### General` heading
-   as a numbered list.
+1. **Code-specific observations** — these become inline review comments as part of the pending
+   review. Always use both `startLine` and `line` to highlight the full enclosing code block (e.g.,
+   the entire function, the complete const group, or the whole conditional chain), not just the
+   narrow lines that triggered the observation.
+2. **File-specific observations** — these become file-level review comments as part of the same
+   pending review.
+3. **General observations** — these are posted as a standalone PR comment. The review body set via
+   the API gets overwritten when the user clicks "Submit review" in the GitHub UI, so general
+   observations must be posted separately to remain visible.
 
-Only code-specific observations go in the `comments` array. File-specific and general observations go
-in the review `body`. The GitHub review creation endpoint does not support file-level comments in the
-`comments` array.
+### Step 7a: Create the pending review with inline comments
 
-### Build the review body
-
-Construct the review body as Markdown with the following structure:
-
-```markdown
-## Review Observations
-
-### General
-
-1. **{synopsis}.** {full observation text}
-
-2. **{synopsis}.** {full observation text}
-
-### File-level
-
-3. **`{file path}` — {synopsis}.** {full observation text}
-
-4. **`{file path}` — {synopsis}.** {full observation text}
-```
-
-Omit a heading if there are no observations of that type. If there are no general or file-specific
-observations at all, set the body to "See inline comments for detailed feedback."
-
-### Construct and send the review
-
-Use `jq` to build the JSON payload. This avoids shell escaping issues with observation text that may
-contain quotes, newlines, or special characters.
-
-**Important**: Do **not** include an `event` field in the payload. Omitting `event` causes the GitHub
-API to create the review in a `PENDING` state, which is what we want — the user will submit it
-manually from the GitHub UI.
+Use the GraphQL `addPullRequestReview` mutation to create the pending review. This mutation accepts
+a `threads` array for inline comments and returns the review's node ID (needed for Step 7b).
 
 ```
-jq -n \
-  --arg body "$REVIEW_BODY" \
-  --arg commit_id "$HEAD_COMMIT_SHA" \
-  --argjson comments "$COMMENTS_JSON" \
-  '{body: $body, commit_id: $commit_id, comments: $comments}' \
-| gh api -X POST repos/{owner}/{repo}/pulls/{number}/reviews --input -
+gh api graphql -f query='
+  mutation($prId: ID!, $body: String!, $threads: [DraftPullRequestReviewThread!]!) {
+    addPullRequestReview(input: {
+      pullRequestId: $prId,
+      body: $body,
+      threads: $threads
+    }) {
+      pullRequestReview { id }
+    }
+  }
+' -f prId="$PR_NODE_ID" -f body="$REVIEW_BODY" -f threads="$THREADS_JSON"
 ```
 
-The `COMMENTS_JSON` variable is a JSON array built from only the code-specific observations. Each
-element must include `start_line` and `line` to highlight the full enclosing code block:
+Set `$PR_NODE_ID` to the GraphQL node ID captured in Step 1. Set `$REVIEW_BODY` to a brief message
+like "See inline and file-level comments for detailed feedback." (This body may be overwritten when
+the user submits, which is fine.)
+
+The `$THREADS_JSON` variable is a JSON array of inline comment threads. Each element must include
+`path`, `line`, `startLine`, `side`, `startSide`, and `body`:
 
 ```json
-{"path": "src/main.rs", "start_line": 30, "line": 55, "side": "RIGHT", "body": "Observation text here."}
+[
+  {"path": "src/main.rs", "startLine": 30, "line": 55, "side": "RIGHT", "startSide": "RIGHT", "body": "Observation text."}
+]
 ```
 
-If there are no code-specific observations, pass an empty array: `[]`.
+**Important**: The `threads` array in `addPullRequestReview` does **not** support `subjectType`, so
+only code-specific (line-level) observations go here. File-specific observations are added in Step 7b.
 
-### Error handling
+If there are no code-specific observations, still create the review with an empty `threads` array so
+that file-level comments can be attached in Step 7b.
+
+Capture the review's node ID from the response (the `id` field under `pullRequestReview`).
+
+#### Error handling
 
 If the API returns an error indicating that a pending review already exists for this user on this PR,
 display:
@@ -270,6 +260,56 @@ display:
 
 Stop here. Do not attempt to modify the existing review.
 
+### Step 7b: Add file-level comments to the pending review
+
+For each file-specific observation, use the GraphQL `addPullRequestReviewThread` mutation with
+`subjectType: FILE`. This adds a file-level comment to the pending review created in Step 7a.
+
+```
+gh api graphql -f query='
+  mutation($reviewId: ID!, $path: String!, $body: String!) {
+    addPullRequestReviewThread(input: {
+      pullRequestReviewId: $reviewId,
+      path: $path,
+      body: $body,
+      subjectType: FILE
+    }) {
+      thread { id }
+    }
+  }
+' -f reviewId="$REVIEW_NODE_ID" -f path="$FILE_PATH" -f body="$OBSERVATION_TEXT"
+```
+
+Run this mutation once for each file-specific observation.
+
+### Step 7c: Post general observations as a PR comment
+
+If there are general observations (not tied to any specific file), post them as a standalone PR
+comment so they are immediately visible.
+
+Construct the comment body as Markdown:
+
+```markdown
+## General Review Observations
+
+1. **{synopsis}.** {full observation text}
+
+2. **{synopsis}.** {full observation text}
+```
+
+Post the comment:
+
+```
+gh pr comment {number} --repo {owner}/{repo} --body "$COMMENT_BODY"
+```
+
+Skip this step if there are no general observations.
+
+### Error handling
+
+If the review creation in Step 7a fails, do not proceed to Steps 7b or 7c. If Step 7b or 7c fails,
+display the error and suggest the user post the comment manually.
+
 ## Step 8: Summary and next steps
 
 Display a final summary:
@@ -277,9 +317,9 @@ Display a final summary:
 > **Pending review created on PR #{number}.**
 >
 > The review contains:
-> - {N} inline code comment(s)
-> - {N} file-level observation(s) in the review body
-> - {N} general observation(s) in the review body
+> - {N} inline code comment(s) (in the pending review)
+> - {N} file-level comment(s) (in the pending review)
+> - {N} general observation(s) (posted as a PR comment)
 >
 > **The review has NOT been submitted.** It is saved as a pending draft on GitHub.
 >
@@ -289,18 +329,16 @@ Display a final summary:
 > 3. Select your disposition: **{the disposition the user chose in Step 6}**
 > 4. Click **Submit review**
 >
-> Until you submit, the PR author cannot see your comments.
+> The general observations are already visible as a PR comment. The inline and file-level comments
+> will become visible to the PR author once you submit the review.
 
 ## Step 9: Slack summary
 
-Generate a short Slack-ready message the user can post to notify the PR author that the review is
-complete. Format it as:
+Generate a short, single-paragraph Slack-ready message the user can post to notify the PR author that
+the review is complete. Format it as:
 
-> I've completed my review of PR #{number} ({PR title}): {PR URL}
->
-> Disposition: **{Comment, Approve, or Request Changes}** with {total observation count}
-> observation(s) — {N} inline, {N} file-level, and {N} general.
->
-> The review is pending in GitHub — please take a look when you get a chance.
+> I've completed my review of PR #{number} ({PR title}): {PR URL} — disposition is **{Comment,
+> Approve, or Request Changes}** with {total observation count} observation(s) across {N} inline,
+> {N} file-level, and {N} general.
 
 Display this message and tell the user they can copy it to Slack.
