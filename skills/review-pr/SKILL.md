@@ -3,7 +3,7 @@ name: kiss:review-pr
 description: Review a peer's PR — analyze changes, build observations interactively, and create a pending GitHub review with inline and file-level comments.
 user-invocable: true
 allowed-tools: Read, Grep, Glob, Bash, Agent
-argument-hint: "[PR-number]"
+argument-hint: "[owner/repo PR-number]"
 ---
 
 # Review a Peer's PR
@@ -11,37 +11,57 @@ argument-hint: "[PR-number]"
 You are conducting a thorough code review of a pull request authored by someone else. Work through the
 following steps in order. Be methodical — do not skip steps or combine them.
 
-## Step 1: Identify the PR
+## Step 1: Identify the repository and PR
 
-If the user provided a PR number as `$ARGUMENTS`, use that. Otherwise, ask the user for the PR number
-they want to review.
+This skill can run from any directory — it does not require the user to be inside the target
+repository's checkout.
 
-Once you have the number, fetch the PR details:
+### Determine the repository
+
+If `$ARGUMENTS` contains a value that looks like `owner/repo` (a string with exactly one slash and no
+spaces), use that. Otherwise, ask the user:
+
+> Which repository contains the PR you want to review? (format: `owner/repo`)
+
+Once you have the repository, verify that it exists and is accessible:
 
 ```
-gh pr view {number} --json number,title,url,headRefName
+gh repo view {owner}/{repo} --json name,owner --jq '{owner: .owner.login, repo: .name}'
+```
+
+If this command fails, the repository either does not exist or the user does not have access. Display
+the error and stop here.
+
+### Determine the PR number
+
+If `$ARGUMENTS` contains a numeric value, use that as the PR number. Otherwise, ask the user:
+
+> What is the PR number you want to review?
+
+Once you have both the repository and PR number, fetch the PR details. Use the `--repo` flag so the
+command works regardless of the current working directory:
+
+```
+gh pr view {number} --repo {owner}/{repo} --json number,title,url,headRefName
 ```
 
 Display the PR number, title, and URL. Ask the user to confirm this is the correct PR before proceeding.
 
-Also capture the repository owner and name:
+Also capture the head commit SHA (needed later for inline comments):
 
 ```
-gh repo view --json owner,name --jq '{owner: .owner.login, repo: .name}'
+gh pr view {number} --repo {owner}/{repo} --json commits --jq '.commits[-1].oid'
 ```
 
-And capture the head commit SHA (needed later for inline comments):
-
-```
-gh pr view {number} --json commits --jq '.commits[-1].oid'
-```
+**Important**: All `gh pr` commands in subsequent steps must include `--repo {owner}/{repo}` so they
+target the correct repository.
 
 ## Step 2: Verify the PR is open
 
 Check that the PR has not already been merged or closed:
 
 ```
-gh pr view {number} --json state,mergedAt --jq '{state: .state, mergedAt: .mergedAt}'
+gh pr view {number} --repo {owner}/{repo} --json state,mergedAt --jq '{state: .state, mergedAt: .mergedAt}'
 ```
 
 If the state is not `OPEN`, display a message explaining why the review cannot proceed:
@@ -56,9 +76,9 @@ Stop here. Do not proceed to Step 3.
 Gather the diff, changed file list, and PR metadata:
 
 ```
-gh pr diff {number}
-gh pr diff {number} --name-only
-gh pr view {number} --json body,title,baseRefName,headRefName
+gh pr diff {number} --repo {owner}/{repo}
+gh pr diff {number} --repo {owner}/{repo} --name-only
+gh pr view {number} --repo {owner}/{repo} --json body,title,baseRefName,headRefName
 ```
 
 For each changed file, read the full file content — not just the diff hunks — to understand the broader
