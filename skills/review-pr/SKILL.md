@@ -100,13 +100,16 @@ Build an enumerated list of observations. Each observation must be classified as
 
 | Type | Description | GitHub mapping |
 |------|-------------|----------------|
-| **Code-specific** | Tied to a specific file and line or line range | Inline review comment |
-| **File-specific** | About a file as a whole, not a particular line | File-level review comment |
-| **General** | About the PR overall — architecture, approach, cross-cutting concerns | Included in the review body |
+| **Code-specific** | Tied to a specific file and line or line range | Inline review comment in the `comments` array |
+| **File-specific** | About a file as a whole, not a particular line | Included in the review body under a "File-level" heading |
+| **General** | About the PR overall — architecture, approach, cross-cutting concerns | Included in the review body under a "General" heading |
 
-For code-specific observations, record the file path, line number (or start and end line for a range),
-and the observation text. For file-specific observations, record the file path and observation text. For
-general observations, record only the observation text.
+For code-specific observations, record the file path, the full line range of the enclosing code block,
+and the observation text. The line range should span the entire relevant block — for example, a full
+function definition, a complete struct or enum, an entire const declaration group, or a whole if/else
+chain — not just the narrow lines that triggered the observation. This gives the PR author full context
+when reading the inline comment. For file-specific observations, record the file path and observation
+text. For general observations, record only the observation text.
 
 ## Step 4: Present observations
 
@@ -115,8 +118,8 @@ Display a summary table of all observations:
 ```
 | #  | Type          | Location              | Synopsis                              |
 |----|---------------|-----------------------|---------------------------------------|
-| 1  | Code-specific | src/main.rs:42        | Potential panic on unwrap()            |
-| 2  | Code-specific | src/main.rs:78-85     | Missing error handling in loop         |
+| 1  | Code-specific | src/main.rs:30-55     | Potential panic on unwrap()            |
+| 2  | Code-specific | src/main.rs:70-95     | Missing error handling in loop         |
 | 3  | File-specific | src/utils.ts          | New module has no corresponding tests  |
 | 4  | General       | —                     | PR description omits breaking change   |
 ```
@@ -145,10 +148,11 @@ Walk through each observation one at a time. For each observation:
 5. If the user says **edit**: enter an edit cycle:
    - Ask the user for their revised wording or modification instructions.
    - Update the observation accordingly.
-   - Present the updated observation and ask again: **accept** or **edit**.
-   - Repeat until the user accepts the revised version.
+   - Present the updated observation and ask: **accept**, **edit**, or **ignore**.
+   - Repeat until the user either accepts or ignores.
 
-6. If the user says **ignore**: remove the observation from the final list and move to the next one.
+6. If the user says **ignore** (at any point — initial prompt or during an edit cycle): remove the
+   observation from the final list and move to the next one.
 
 After processing all observations, display a summary:
 
@@ -190,47 +194,69 @@ clicks "Submit review," they will confirm their chosen disposition at that time.
 
 Separate the accepted observations into three groups based on their type:
 
-1. **Code-specific observations** — these become entries in the `comments` array with `path`, `line`
-   (and optionally `start_line` for multi-line ranges), `side: "RIGHT"`, and `body`.
-2. **File-specific observations** — these become entries in the `comments` array with `path`,
-   `subject_type: "file"`, and `body`.
-3. **General observations** — these are concatenated into the review `body` field as a numbered
-   Markdown list under a `## Review Observations` heading.
+1. **Code-specific observations** — these become entries in the `comments` array with `path`,
+   `start_line`, `line`, `side: "RIGHT"`, and `body`. Always use both `start_line` and `line` to
+   highlight the full enclosing code block (e.g., the entire function, the complete const group, or
+   the whole conditional chain), not just the narrow lines that triggered the observation.
+2. **File-specific observations** — these are included in the review `body` under a
+   `### File-level` heading. Each entry should be formatted as a bold file path followed by the
+   observation text.
+3. **General observations** — these are included in the review `body` under a `### General` heading
+   as a numbered list.
 
-If there are no general observations, set the body to "See inline comments for detailed feedback."
+Only code-specific observations go in the `comments` array. File-specific and general observations go
+in the review `body`. The GitHub review creation endpoint does not support file-level comments in the
+`comments` array.
+
+### Build the review body
+
+Construct the review body as Markdown with the following structure:
+
+```markdown
+## Review Observations
+
+### General
+
+1. **{synopsis}.** {full observation text}
+
+2. **{synopsis}.** {full observation text}
+
+### File-level
+
+3. **`{file path}` — {synopsis}.** {full observation text}
+
+4. **`{file path}` — {synopsis}.** {full observation text}
+```
+
+Omit a heading if there are no observations of that type. If there are no general or file-specific
+observations at all, set the body to "See inline comments for detailed feedback."
 
 ### Construct and send the review
 
 Use `jq` to build the JSON payload. This avoids shell escaping issues with observation text that may
 contain quotes, newlines, or special characters.
 
+**Important**: Do **not** include an `event` field in the payload. Omitting `event` causes the GitHub
+API to create the review in a `PENDING` state, which is what we want — the user will submit it
+manually from the GitHub UI.
+
 ```
 jq -n \
-  --arg event "PENDING" \
   --arg body "$REVIEW_BODY" \
   --arg commit_id "$HEAD_COMMIT_SHA" \
   --argjson comments "$COMMENTS_JSON" \
-  '{event: $event, body: $body, commit_id: $commit_id, comments: $comments}' \
-| gh api repos/{owner}/{repo}/pulls/{number}/reviews --input -
+  '{body: $body, commit_id: $commit_id, comments: $comments}' \
+| gh api -X POST repos/{owner}/{repo}/pulls/{number}/reviews --input -
 ```
 
-The `COMMENTS_JSON` variable is a JSON array built from the code-specific and file-specific
-observations. Each element follows one of these shapes:
+The `COMMENTS_JSON` variable is a JSON array built from only the code-specific observations. Each
+element must include `start_line` and `line` to highlight the full enclosing code block:
 
-**Code-specific (single line):**
 ```json
-{"path": "src/main.rs", "line": 42, "side": "RIGHT", "body": "Observation text here."}
+{"path": "src/main.rs", "start_line": 30, "line": 55, "side": "RIGHT", "body": "Observation text here."}
 ```
 
-**Code-specific (line range):**
-```json
-{"path": "src/main.rs", "start_line": 78, "line": 85, "side": "RIGHT", "body": "Observation text here."}
-```
-
-**File-specific:**
-```json
-{"path": "src/utils.ts", "subject_type": "file", "body": "Observation text here."}
-```
+If there are no code-specific observations, pass an empty array: `[]`.
 
 ### Error handling
 
@@ -252,7 +278,7 @@ Display a final summary:
 >
 > The review contains:
 > - {N} inline code comment(s)
-> - {N} file-level comment(s)
+> - {N} file-level observation(s) in the review body
 > - {N} general observation(s) in the review body
 >
 > **The review has NOT been submitted.** It is saved as a pending draft on GitHub.
@@ -264,3 +290,17 @@ Display a final summary:
 > 4. Click **Submit review**
 >
 > Until you submit, the PR author cannot see your comments.
+
+## Step 9: Slack summary
+
+Generate a short Slack-ready message the user can post to notify the PR author that the review is
+complete. Format it as:
+
+> I've completed my review of PR #{number} ({PR title}): {PR URL}
+>
+> Disposition: **{Comment, Approve, or Request Changes}** with {total observation count}
+> observation(s) — {N} inline, {N} file-level, and {N} general.
+>
+> The review is pending in GitHub — please take a look when you get a chance.
+
+Display this message and tell the user they can copy it to Slack.
