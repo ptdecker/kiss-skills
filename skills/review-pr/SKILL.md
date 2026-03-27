@@ -3,7 +3,7 @@ name: kiss:review-pr
 description: Review a peer's PR — analyze changes, build observations interactively, and create a pending GitHub review with inline and file-level comments.
 user-invocable: true
 allowed-tools: Read, Grep, Glob, Bash, Agent
-argument-hint: "[owner/repo PR-number]"
+argument-hint: "[owner/repo PR | PR-URL]"
 ---
 
 # Review a Peer's PR
@@ -15,6 +15,12 @@ following steps in order. Be methodical — do not skip steps or combine them.
 
 This skill can run from any directory — it does not require the user to be inside the target
 repository's checkout.
+
+### Parse a GitHub PR URL
+
+If `$ARGUMENTS` contains a GitHub PR URL (matching the pattern
+`https://github.com/{owner}/{repo}/pull/{number}`), parse the owner, repo, and PR number from it
+directly and skip the separate prompts below.
 
 ### Determine the repository
 
@@ -53,7 +59,7 @@ Also capture the PR's GraphQL node ID (needed later for the review creation muta
 gh pr view {number} --repo {owner}/{repo} --json id --jq '.id'
 ```
 
-**Important**: All `gh pr` commands in subsequent steps must include `--repo {owner}/{repo}` so they
+**Important**: All `gh pr` commands in later steps must include `--repo {owner}/{repo}` so they
 target the correct repository.
 
 ## Step 2: Verify the PR is open
@@ -105,14 +111,14 @@ Perform a thorough review. Consider each of the following dimensions:
 
 Build an enumerated list of observations. Each observation must be classified as one of three types:
 
-| Type | Description | GitHub mapping |
-|------|-------------|----------------|
-| **Code-specific** | Tied to a specific file and line or line range | Inline review comment (part of the pending review) |
-| **File-specific** | About a file as a whole, not a particular line | File-level review comment (part of the pending review) |
-| **General** | About the PR overall — architecture, approach, cross-cutting concerns | Posted as a separate PR comment |
+| Type              | Description                                                           | GitHub mapping                                         |
+|-------------------|-----------------------------------------------------------------------|--------------------------------------------------------|
+| **Code-specific** | Tied to a specific file and line or line range                        | Inline review comment (part of the pending review)     |
+| **File-specific** | About a file as a whole, not a particular line                        | File-level review comment (part of the pending review) |
+| **General**       | About the PR overall — architecture, approach, cross-cutting concerns | Posted as a separate PR comment                        |
 
 For code-specific observations, record the file path, the full line range of the enclosing code block,
-and the observation text. The line range should span the entire relevant block — for example, a full
+and the observation text. The line range should span the entire relevant block. For example, a full
 function definition, a complete struct or enum, an entire const declaration group, or a whole if/else
 chain — not just the narrow lines that triggered the observation. This gives the PR author full context
 when reading the inline comment. For file-specific observations, record the file path and observation
@@ -216,26 +222,28 @@ Separate the accepted observations into three groups based on their type:
 Use the GraphQL `addPullRequestReview` mutation to create the pending review. This mutation accepts
 a `threads` array for inline comments and returns the review's node ID (needed for Step 7b).
 
+Use `jq` to construct the full JSON payload and pipe it to `gh api graphql --input -`. This avoids
+shell escaping issues with observation text that may contain quotes, newlines, or special characters.
+Do **not** use individual `-f` or `-F` flags for the `threads` variable — `gh api graphql` cannot
+pass complex JSON arrays via flags.
+
 ```
-gh api graphql -f query='
-  mutation($prId: ID!, $body: String!, $threads: [DraftPullRequestReviewThread!]!) {
-    addPullRequestReview(input: {
-      pullRequestId: $prId,
-      body: $body,
-      threads: $threads
-    }) {
-      pullRequestReview { id }
-    }
-  }
-' -f prId="$PR_NODE_ID" -f body="$REVIEW_BODY" -f threads="$THREADS_JSON"
+jq -n \
+  --arg prId "$PR_NODE_ID" \
+  --arg body "$REVIEW_BODY" \
+  --argjson threads "$THREADS_JSON" \
+  '{
+    query: "mutation($prId: ID!, $body: String!, $threads: [DraftPullRequestReviewThread!]!) { addPullRequestReview(input: { pullRequestId: $prId, body: $body, threads: $threads }) { pullRequestReview { id } } }",
+    variables: { prId: $prId, body: $body, threads: $threads }
+  }' | gh api graphql --input -
 ```
 
 Set `$PR_NODE_ID` to the GraphQL node ID captured in Step 1. Set `$REVIEW_BODY` to a brief message
 like "See inline and file-level comments for detailed feedback." (This body may be overwritten when
 the user submits, which is fine.)
 
-The `$THREADS_JSON` variable is a JSON array of inline comment threads. Each element must include
-`path`, `line`, `startLine`, `side`, `startSide`, and `body`:
+Build `$THREADS_JSON` as a JSON array using `jq`. Each element must include `path`, `line`,
+`startLine`, `side`, `startSide`, and `body`:
 
 ```json
 [
