@@ -47,15 +47,11 @@ gh pr view {number} --repo {owner}/{repo} --json number,title,url,headRefName
 
 Display the PR number, title, and URL. Ask the user to confirm this is the correct PR before proceeding.
 
-Also capture two values needed later when creating the review:
+Also capture the PR's GraphQL node ID (needed later for the review creation mutation):
 
 ```
-gh pr view {number} --repo {owner}/{repo} --json commits --jq '.commits[-1].oid'
 gh pr view {number} --repo {owner}/{repo} --json id --jq '.id'
 ```
-
-The first is the head commit SHA (needed for inline comments). The second is the PR's GraphQL node ID
-(needed for the GraphQL review creation mutation).
 
 **Important**: All `gh pr` commands in subsequent steps must include `--repo {owner}/{repo}` so they
 target the correct repository.
@@ -86,8 +82,15 @@ gh pr view {number} --repo {owner}/{repo} --json body,title,baseRefName,headRefN
 ```
 
 For each changed file, read the full file content — not just the diff hunks — to understand the broader
-context surrounding each change. When the PR touches many files, use `Agent` sub-agents to parallelize
-the analysis across different files.
+context surrounding each change. Since this skill may run from outside the target repository's checkout,
+fetch file content via the GitHub API:
+
+```
+gh api "repos/{owner}/{repo}/contents/{path}?ref={headRefName}" --jq '.content' | base64 -d
+```
+
+When the PR touches many files, use `Agent` sub-agents to parallelize the analysis across different
+files.
 
 Perform a thorough review. Consider each of the following dimensions:
 

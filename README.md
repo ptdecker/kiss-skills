@@ -8,7 +8,7 @@ Shareable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 |---------------------------------------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------|
 | [review-copilot](skills/review-copilot/SKILL.md)  | `/kiss:review-copilot [PR]` | Triage GitHub Copilot PR review comments — evaluate, fix valid issues, dismiss the rest, and respond on GitHub      |
 | [review-peer](skills/review-peer/SKILL.md)        | `/kiss:review-peer [PR]`    | Triage and respond to unresolved peer review comments — fix valid issues, explain skipped ones, and reply on GitHub |
-| [review-pr](skills/review-pr/SKILL.md)            | `/kiss:review-pr [PR]`      | Review a peer's PR — analyze changes, build observations interactively, and create a pending GitHub review          |
+| [review-pr](skills/review-pr/SKILL.md)            | `/kiss:review-pr [owner/repo PR]` | Review a peer's PR — analyze changes, build observations interactively, and create a pending GitHub review    |
 | [pr-announce](skills/pr-announce/SKILL.md)        | `/kiss:pr-announce [PR]`    | Generate a Slack-ready announcement that a PR is ready for review and copy it to your clipboard                     |
 | [update](skills/update/SKILL.md)                  | `/kiss:update`              | Update locally installed skills to the latest version from GitHub                                                   |
 
